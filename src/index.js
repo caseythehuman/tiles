@@ -1,12 +1,36 @@
 import { Stage, Layer, Rect, Line, Text } from "konva";
 
 //polygon corners for the wall or floor (in pixels, but also millimeters)
-const verticesArray = [0, 0, 1000, 0, 1500, 2000, 500, 2000, 500, 500, 0, 500];
+let verticesArray = [100, 100, 1000, 40, 1500, 2000, 500, 2000, 500, 500, 100, 500];
+
+//random shape maker for testing
+//let verticesArray = [0, 0, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000];
+const shiftX = 10;
+const shiftY = 10;
+
+function shiftPolygon (polygonPoints, xDistance, yDistance){
+  let i;
+  while (i < polygonPoints.length){
+    polygonPoints[i] = polygonPoints[i]+xDistance;
+    i++;
+    polygonPoints[i] = polygonPoints[i]+yDistance;
+    i++;
+  }
+return polygonPoints;
+console.log("polypouints",polygonPoints);
+  };
+
+  const shiftedPolygon = verticesArray;
+  console.log("shifted", shiftPolygon);
+
 const wall = drawPolygon(verticesArray);
 //zoom of stage
-let scale = 0.5;
+let scale = 1;
 
-fillWallWithTiles(wall, 200, 100, 10);
+fillWallWithTiles(wall, 400, 100, 10);
+
+
+
 
 //do lines intersect? use this to find all intersections of polygon and tiles.
 //TODO make function to offset polygon line toward tile the distance of a groutline
@@ -14,7 +38,7 @@ fillWallWithTiles(wall, 200, 100, 10);
 //TODO function that is called as each tile is produced to see if any of its lines intersect with the polygon (bug? should I offset the polugon in to start with so that tiles that come near to but not touch the polygon are detected? Yes! will catch uncut tiles on the edge that would be a pain in the ass)
 //TODO function that checks to see if some part of the tile is inside the polygon
 //just walk over the points of the tile with this and if a corner fails we can cut it off. If all fail the tile shouldn't get pushed to parent
-console.log("inside", isPointInsidePolygon(verticesArray, 850, 10));
+
 //TODO unfuck that while loop that controls the tile placement
 function intersect(x1, y1, x2, y2, x3, y3, x4, y4) {
   // Check if none of the lines are of length 0
@@ -77,7 +101,8 @@ function drawPolygon(vertices) {
     fill: "pink",
     stroke: "black",
     strokeWidth: 2,
-    closed: true
+    closed: true,
+    draggable: true
   });
   //console.log("This one:", polygon);
   return polygon;
@@ -92,8 +117,10 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
 
   const stage = new Stage({
     container: document.getElementById("app"),
-    width: 2000,
-    height: 2000
+    width: window.innerWidth,
+    height: window.innerHeight,
+    draggable: false,
+    pos: 1000
   });
   stage.scale({ x: scale, y: scale });
 
@@ -102,7 +129,8 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
 
   // Add the polygon to the layer
   layer.add(polygon);
-
+  
+  
   // Add the layer to the stage
   stage.add(layer);
 
@@ -128,23 +156,42 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
         y: y,
         width: tileWidth,
         height: tileHeight,
-        fill: null,
+        fill: "transparent",
         stroke: "black",
         strokeWidth: 1
       });
 
       var text = new Text({
-        x: x,
-        y: y,
+        x: x + tileWidth/3,
+        y: y + tileHeight/3,
         fontSize: 30,
         fill: "black",
         text: `x:${x} y:${y}`
       });
 
+      
       //counterY += tileHeight + gap;
       // Add the tile to the polygon's parent group
-      polygon.getParent().add(tile);
-      polygon.getParent().add(text);
+      //console.log(tile);
+      //console.log("x:", tile.attrs.x)
+      //console.log("inside", isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y));
+//checks if x-y pair is in polygon before pushing to parent. 
+//TODO check all corners. xy,x-y+height,x+width-y, x+width-y+height
+console.log("alksdj",  isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y) , "PPP",  isPointInsidePolygon(verticesArray, 
+  tile.attrs.x, tile.attrs.y + tile.attrs.height) , "PPP",  isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y)
+, "PPP",  isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y + tile.attrs.width));
+      if( 
+       isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y) || 
+       isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y + tile.attrs.height) || 
+       isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y) || 
+       isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y + tile.attrs.height)
+        
+      ){
+        polygon.getParent().add(tile);
+        polygon.getParent().add(text);        
+      }
+
+      
     }
 
     // Move the x coordinate to the right by the width of the tile plus the gap
@@ -156,7 +203,7 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
       rowCount++;
       //this part does the subway tile pattern
       if (rowCount % 2) {
-        x = gap + tileWidth / 2;
+        x = - (tileWidth)/ 2;
       } else {
         x = gap;
       }
