@@ -1,36 +1,46 @@
 import { Stage, Layer, Rect, Line, Text } from "konva";
 
 //polygon corners for the wall or floor (in pixels, but also millimeters)
-let verticesArray = [100, 100, 1000, 40, 1500, 2000, 500, 2000, 500, 500, 100, 500];
+let verticesArray = [
+  100,
+  100,
+  1000,
+  40,
+  1500,
+  2000,
+  500,
+  2000,
+  500,
+  500,
+  100,
+  500
+];
 
 //random shape maker for testing
 //let verticesArray = [0, 0, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000];
 const shiftX = 10;
 const shiftY = 10;
 
-function shiftPolygon (polygonPoints, xDistance, yDistance){
+function shiftPolygon(polygonPoints, xDistance, yDistance) {
   let i;
-  while (i < polygonPoints.length){
-    polygonPoints[i] = polygonPoints[i]+xDistance;
+  while (i < polygonPoints.length) {
+    polygonPoints[i] = polygonPoints[i] + xDistance;
     i++;
-    polygonPoints[i] = polygonPoints[i]+yDistance;
+    polygonPoints[i] = polygonPoints[i] + yDistance;
     i++;
   }
-return polygonPoints;
-console.log("polypouints",polygonPoints);
-  };
+  return polygonPoints;
+  console.log("polypouints", polygonPoints);
+}
 
-  const shiftedPolygon = verticesArray;
-  console.log("shifted", shiftPolygon);
+const shiftedPolygon = verticesArray;
+console.log("shifted", shiftPolygon);
 
 const wall = drawPolygon(verticesArray);
 //zoom of stage
-let scale = 1;
+let scale = 0.3;
 
 fillWallWithTiles(wall, 400, 100, 10);
-
-
-
 
 //do lines intersect? use this to find all intersections of polygon and tiles.
 //TODO make function to offset polygon line toward tile the distance of a groutline
@@ -129,8 +139,7 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
 
   // Add the polygon to the layer
   layer.add(polygon);
-  
-  
+
   // Add the layer to the stage
   stage.add(layer);
 
@@ -162,36 +171,42 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
       });
 
       var text = new Text({
-        x: x + tileWidth/3,
-        y: y + tileHeight/3,
+        x: x + tileWidth / 3,
+        y: y + tileHeight / 3,
         fontSize: 30,
         fill: "black",
         text: `x:${x} y:${y}`
       });
 
-      
       //counterY += tileHeight + gap;
       // Add the tile to the polygon's parent group
       //console.log(tile);
       //console.log("x:", tile.attrs.x)
       //console.log("inside", isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y));
-//checks if x-y pair is in polygon before pushing to parent. 
-//TODO check all corners. xy,x-y+height,x+width-y, x+width-y+height
-console.log("alksdj",  isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y) , "PPP",  isPointInsidePolygon(verticesArray, 
-  tile.attrs.x, tile.attrs.y + tile.attrs.height) , "PPP",  isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y)
-, "PPP",  isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y + tile.attrs.width));
-      if( 
-       isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y) || 
-       isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y + tile.attrs.height) || 
-       isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y) || 
-       isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y + tile.attrs.height)
-        
-      ){
-        polygon.getParent().add(tile);
-        polygon.getParent().add(text);        
-      }
+      //checks if x-y pair is in polygon before pushing to parent.
+      //TODO check all corners. xy,x-y+height,x+width-y, x+width-y+height
 
-      
+      if (
+        isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y) ||
+        isPointInsidePolygon(
+          verticesArray,
+          tile.attrs.x,
+          tile.attrs.y + tile.attrs.height
+        ) ||
+        isPointInsidePolygon(
+          verticesArray,
+          tile.attrs.x + tile.attrs.width,
+          tile.attrs.y
+        ) ||
+        isPointInsidePolygon(
+          verticesArray,
+          tile.attrs.x + tile.attrs.width,
+          tile.attrs.y + tile.attrs.height
+        )
+      ) {
+        polygon.getParent().add(tile);
+        polygon.getParent().add(text);
+      }
     }
 
     // Move the x coordinate to the right by the width of the tile plus the gap
@@ -203,11 +218,47 @@ console.log("alksdj",  isPointInsidePolygon(verticesArray, tile.attrs.x, tile.at
       rowCount++;
       //this part does the subway tile pattern
       if (rowCount % 2) {
-        x = - (tileWidth)/ 2;
+        x = -tileWidth / 2;
       } else {
         x = gap;
       }
       y += tileHeight + gap;
     }
   }
+}
+const offsetArray = offsetPolygon(verticesArray, 20, 90);
+console.log(offsetArray);
+/**
+ * Offsets a closed polygon represented by an array of points by a given distance and angle.
+ *
+ * @param {Array} points - An array of points representing a closed polygon. Each point should have an `x` and `y` property.
+ * @param {number} distance - The distance to offset the polygon.
+ * @param {number} angle - The angle in radians to offset the polygon.
+ * @return {Array} A new array of points representing the original polygon with the offset applied.
+ */
+function offsetPolygon(points, distance, angle) {
+  // Create an empty array to store the offset points
+  const offsetPoints = [];
+
+  // Loop through each point in the array
+  for (let i = 0; i < points.length; i++) {
+    // Get the current point and the next point
+    const p1 = points[i];
+    const p2 = points[(i + 1) % points.length];
+
+    // Calculate the angle between the two points using the arctangent function
+    // This is the angle of the line connecting the two points, measured from the positive x-axis.
+    const theta = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+    // Calculate the offset for the current point using the angle and distance
+    // The offset is added to the point's coordinates to get the new point
+    const offsetX = distance * Math.cos(theta + angle);
+    const offsetY = distance * Math.sin(theta + angle);
+
+    // Add the offset point to the array
+    offsetPoints.push({ x: p1.x + offsetX, y: p1.y + offsetY });
+  }
+
+  // Return the array of offset points
+  return offsetPoints;
 }
