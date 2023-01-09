@@ -1,5 +1,4 @@
 import { Stage, Layer, Rect, Line, Text } from "konva";
-
 //polygon corners for the wall or floor (in pixels, but also millimeters)
 let verticesArray = [
   100,
@@ -18,24 +17,6 @@ let verticesArray = [
 
 //random shape maker for testing
 //let verticesArray = [0, 0, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000];
-const shiftX = 10;
-const shiftY = 10;
-
-function shiftPolygon(polygonPoints, xDistance, yDistance) {
-  let i;
-  while (i < polygonPoints.length) {
-    polygonPoints[i] = polygonPoints[i] + xDistance;
-    i++;
-    polygonPoints[i] = polygonPoints[i] + yDistance;
-    i++;
-  }
-  return polygonPoints;
-  console.log("polypouints", polygonPoints);
-}
-
-const shiftedPolygon = verticesArray;
-console.log("shifted", shiftPolygon);
-
 const wall = drawPolygon(verticesArray);
 //zoom of stage
 let scale = 0.3;
@@ -118,10 +99,6 @@ function drawPolygon(vertices) {
   return polygon;
 }
 
-console.log("wallpoints;", wall.getPoints());
-console.log(intersect(0, 0, 100, 100, 0, 100, 100, 0));
-console.log(wall.getPoints());
-
 function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
   //TODO Set the dimensions of the canvas based on the polygon's points
 
@@ -158,8 +135,6 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
 
     counterY++;
     if (x < 2000) {
-      //isPointInsidePolygon(points, x, y)) {
-      // Create a new tile at the current position
       var tile = new Rect({
         x: x,
         y: y,
@@ -177,14 +152,6 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
         fill: "black",
         text: `x:${x} y:${y}`
       });
-
-      //counterY += tileHeight + gap;
-      // Add the tile to the polygon's parent group
-      //console.log(tile);
-      //console.log("x:", tile.attrs.x)
-      //console.log("inside", isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y));
-      //checks if x-y pair is in polygon before pushing to parent.
-      //TODO check all corners. xy,x-y+height,x+width-y, x+width-y+height
 
       if (
         isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y) ||
@@ -225,40 +192,4 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
       y += tileHeight + gap;
     }
   }
-}
-const offsetArray = offsetPolygon(verticesArray, 20, 90);
-console.log(offsetArray);
-/**
- * Offsets a closed polygon represented by an array of points by a given distance and angle.
- *
- * @param {Array} points - An array of points representing a closed polygon. Each point should have an `x` and `y` property.
- * @param {number} distance - The distance to offset the polygon.
- * @param {number} angle - The angle in radians to offset the polygon.
- * @return {Array} A new array of points representing the original polygon with the offset applied.
- */
-function offsetPolygon(points, distance, angle) {
-  // Create an empty array to store the offset points
-  const offsetPoints = [];
-
-  // Loop through each point in the array
-  for (let i = 0; i < points.length; i++) {
-    // Get the current point and the next point
-    const p1 = points[i];
-    const p2 = points[(i + 1) % points.length];
-
-    // Calculate the angle between the two points using the arctangent function
-    // This is the angle of the line connecting the two points, measured from the positive x-axis.
-    const theta = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-
-    // Calculate the offset for the current point using the angle and distance
-    // The offset is added to the point's coordinates to get the new point
-    const offsetX = distance * Math.cos(theta + angle);
-    const offsetY = distance * Math.sin(theta + angle);
-
-    // Add the offset point to the array
-    offsetPoints.push({ x: p1.x + offsetX, y: p1.y + offsetY });
-  }
-
-  // Return the array of offset points
-  return offsetPoints;
 }
