@@ -1,6 +1,9 @@
 import { Stage, Layer, Rect, Line, Text } from "konva";
 //polygon corners for the wall or floor (in pixels, but also millimeters)
-let verticesArray = [0, 0, 839, 0, 848, 1860, 0, 1854];
+let verticesArray = [10, 10, 539, 10, 848, 1860, 0, 1854];
+
+//bathroom above the bench
+//let verticesArray = [0, 0, 839, 0, 848, 1860, 0, 1854];
 
 function trimRect(rect) {
   const pointsOfRect = rect.points;
@@ -135,7 +138,7 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
 
   // Add the polygon to the layer
   layer.add(polygon);
-  layer.add(testRect);
+  //layer.add(testRect);
   // Add the layer to the stage
   stage.add(layer);
 
