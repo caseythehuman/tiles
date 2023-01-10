@@ -1,27 +1,20 @@
 import { Stage, Layer, Rect, Line, Text } from "konva";
 //polygon corners for the wall or floor (in pixels, but also millimeters)
-let verticesArray = [
-  100,
-  100,
-  1000,
-  40,
-  1500,
-  2000,
-  500,
-  2000,
-  500,
-  500,
-  100,
-  500
-];
+let verticesArray = [0, 0, 839, 0, 848, 1860, 0, 1854];
+
+function trimRect(rect) {
+  const pointsOfRect = rect.points;
+  return pointsOfRect;
+}
 
 //random shape maker for testing
 //let verticesArray = [0, 0, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000];
 const wall = drawPolygon(verticesArray);
+
 //zoom of stage
 let scale = 0.3;
 
-fillWallWithTiles(wall, 400, 100, 10);
+fillWallWithTiles(wall, 200, 65, 1.6);
 
 //do lines intersect? use this to find all intersections of polygon and tiles.
 //TODO make function to offset polygon line toward tile the distance of a groutline
@@ -29,6 +22,18 @@ fillWallWithTiles(wall, 400, 100, 10);
 //TODO function that is called as each tile is produced to see if any of its lines intersect with the polygon (bug? should I offset the polugon in to start with so that tiles that come near to but not touch the polygon are detected? Yes! will catch uncut tiles on the edge that would be a pain in the ass)
 //TODO function that checks to see if some part of the tile is inside the polygon
 //just walk over the points of the tile with this and if a corner fails we can cut it off. If all fail the tile shouldn't get pushed to parent
+
+//midpoint formula
+//const midpoint = ([x1, y1], [x2, y2]) => [(x1 + x2) / 2, (y1 + y2) / 2];
+//const mid = midpoint([150,50],[0,0]);
+//console.log(mid);
+
+function getSlopeAngle(s1, s2) {
+  return (Math.atan((s2[1] - s1[1]) / (s2[0] - s1[0])) * 180) / Math.PI;
+}
+
+//console.log(getSlopeAngle([0, 0], [2, 3]));
+// 56.309932474020215
 
 //TODO unfuck that while loop that controls the tile placement
 function intersect(x1, y1, x2, y2, x3, y3, x4, y4) {
@@ -92,8 +97,8 @@ function drawPolygon(vertices) {
     fill: "pink",
     stroke: "black",
     strokeWidth: 2,
-    closed: true,
-    draggable: true
+    closed: true
+    //draggable: true
   });
   //console.log("This one:", polygon);
   return polygon;
@@ -114,11 +119,26 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
   const layer = new Layer();
   stage.add(layer);
 
+  const testRect = new Rect({
+    x: 200,
+    y: 500,
+    width: 800,
+    height: 200,
+    fill: "blue",
+    stroke: "black",
+    strokeWidth: 1
+    //points: [testRect.x(),0,0,0,0,0,0,0]
+  });
+
+  //console.log(testRect.attrs.points[0]);
+
   // Add the polygon to the layer
   layer.add(polygon);
-
+  layer.add(testRect);
   // Add the layer to the stage
   stage.add(layer);
+
+  //testRect.intersects(0,0,0,0);
 
   stage.batchDraw();
   // Initialize the x and y coordinates of the FIRST tile, top left right now
@@ -130,11 +150,11 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
   var counterY = 0;
 
   // Keep placing tiles until the polygon is filled
-  while (y < 2000) {
+  while (y < 200) {
     // Check if the current position is inside the polygon
 
     counterY++;
-    if (x < 2000) {
+    if (x < 900) {
       var tile = new Rect({
         x: x,
         y: y,
@@ -142,15 +162,25 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
         height: tileHeight,
         fill: "transparent",
         stroke: "black",
-        strokeWidth: 1
+        strokeWidth: 1,
+        points: [
+          x,
+          y,
+          x + tileWidth,
+          y,
+          x + tileWidth,
+          y + tileHeight,
+          x,
+          y + tileHeight
+        ]
       });
-
+      console.log(tile.attrs.points);
       var text = new Text({
         x: x + tileWidth / 3,
         y: y + tileHeight / 3,
         fontSize: 30,
-        fill: "black",
-        text: `x:${x} y:${y}`
+        fill: "black"
+        //text: `x:${x} y:${y}`
       });
 
       if (
@@ -181,7 +211,7 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
     x += tileWidth + gap;
 
     // If the x coordinate is past the right edge of the polygon, move to the next row
-    if (x >= 2000) {
+    if (x >= 1200) {
       rowCount++;
       //this part does the subway tile pattern
       if (rowCount % 2) {
