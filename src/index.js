@@ -46,6 +46,7 @@ function intersect(x1, y1, x2, y2, x3, y3, x4, y4) {
 
   // Lines are parallel
   if (denominator === 0) {
+    console.log("lines are parallel");
     return false;
   }
 
@@ -120,8 +121,8 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
   stage.add(layer);
 
   const testRect = new Rect({
-    x: 200,
-    y: 500,
+    x: 839.33,
+    y: 68.19999999999999,
     width: 800,
     height: 200,
     fill: "blue",
@@ -174,7 +175,7 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
           y + tileHeight
         ]
       });
-      console.log(tile.attrs.points);
+      //console.log(tile.attrs.points);
       var text = new Text({
         x: x + tileWidth / 3,
         y: y + tileHeight / 3,
@@ -182,7 +183,32 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
         fill: "black"
         //text: `x:${x} y:${y}`
       });
+      for (let i = 0; i < 8; i += 2) {
+        for (let j = 0; j < 8; j += 2) {
+          var intersection = intersect(
+            verticesArray[i],
+            verticesArray[i + 1],
+            verticesArray[i + 2],
+            verticesArray[i + 3],
+            tile.attrs.points[j],
+            tile.attrs.points[j + 1],
+            tile.attrs.points[j + 2],
+            tile.attrs.points[j + 3]
+          );
+          if (intersection.x) {
+            //console.log(intersection);
+            let intersectionPoint = new Rect({
+              x: intersection.x,
+              y: intersection.y,
+              height: 15,
+              width: 30,
+              fill: "red"
+            });
 
+            polygon.getParent().add(intersectionPoint);
+          }
+        }
+      }
       if (
         isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y) ||
         isPointInsidePolygon(
