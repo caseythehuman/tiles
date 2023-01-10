@@ -15,7 +15,7 @@ function trimRect(rect) {
 const wall = drawPolygon(verticesArray);
 
 //zoom of stage
-let scale = 0.3;
+let scale = 0.8;
 
 fillWallWithTiles(wall, 200, 65, 1.6);
 
@@ -203,8 +203,8 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
             let intersectionPoint = new Rect({
               x: intersection.x,
               y: intersection.y,
-              height: 15,
-              width: 30,
+              height: 10,
+              width: 10,
               fill: "red"
             });
 
@@ -212,6 +212,8 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
           }
         }
       }
+
+      //each one of these should push to an array if true in their proper place in the array to be made into a line. It doesn't matter as long as they're in order, how do you do that for notches?
       if (
         isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y) ||
         isPointInsidePolygon(
