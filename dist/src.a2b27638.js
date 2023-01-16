@@ -117,7 +117,832 @@ parcelRequire = (function (modules, cache, entry, globalName) {
   }
 
   return newRequire;
-})({"node_modules/konva/lib/Global.js":[function(require,module,exports) {
+})({"node_modules/util/support/isBufferBrowser.js":[function(require,module,exports) {
+module.exports = function isBuffer(arg) {
+  return arg && typeof arg === 'object'
+    && typeof arg.copy === 'function'
+    && typeof arg.fill === 'function'
+    && typeof arg.readUInt8 === 'function';
+}
+},{}],"node_modules/util/node_modules/inherits/inherits_browser.js":[function(require,module,exports) {
+if (typeof Object.create === 'function') {
+  // implementation from standard node.js 'util' module
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    ctor.prototype = Object.create(superCtor.prototype, {
+      constructor: {
+        value: ctor,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+  };
+} else {
+  // old school shim for old browsers
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    var TempCtor = function () {}
+    TempCtor.prototype = superCtor.prototype
+    ctor.prototype = new TempCtor()
+    ctor.prototype.constructor = ctor
+  }
+}
+
+},{}],"node_modules/process/browser.js":[function(require,module,exports) {
+
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+function defaultSetTimout() {
+  throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout() {
+  throw new Error('clearTimeout has not been defined');
+}
+(function () {
+  try {
+    if (typeof setTimeout === 'function') {
+      cachedSetTimeout = setTimeout;
+    } else {
+      cachedSetTimeout = defaultSetTimout;
+    }
+  } catch (e) {
+    cachedSetTimeout = defaultSetTimout;
+  }
+  try {
+    if (typeof clearTimeout === 'function') {
+      cachedClearTimeout = clearTimeout;
+    } else {
+      cachedClearTimeout = defaultClearTimeout;
+    }
+  } catch (e) {
+    cachedClearTimeout = defaultClearTimeout;
+  }
+})();
+function runTimeout(fun) {
+  if (cachedSetTimeout === setTimeout) {
+    //normal enviroments in sane situations
+    return setTimeout(fun, 0);
+  }
+  // if setTimeout wasn't available but was latter defined
+  if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+    cachedSetTimeout = setTimeout;
+    return setTimeout(fun, 0);
+  }
+  try {
+    // when when somebody has screwed with setTimeout but no I.E. maddness
+    return cachedSetTimeout(fun, 0);
+  } catch (e) {
+    try {
+      // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+      return cachedSetTimeout.call(null, fun, 0);
+    } catch (e) {
+      // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+      return cachedSetTimeout.call(this, fun, 0);
+    }
+  }
+}
+function runClearTimeout(marker) {
+  if (cachedClearTimeout === clearTimeout) {
+    //normal enviroments in sane situations
+    return clearTimeout(marker);
+  }
+  // if clearTimeout wasn't available but was latter defined
+  if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+    cachedClearTimeout = clearTimeout;
+    return clearTimeout(marker);
+  }
+  try {
+    // when when somebody has screwed with setTimeout but no I.E. maddness
+    return cachedClearTimeout(marker);
+  } catch (e) {
+    try {
+      // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+      return cachedClearTimeout.call(null, marker);
+    } catch (e) {
+      // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+      // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+      return cachedClearTimeout.call(this, marker);
+    }
+  }
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+function cleanUpNextTick() {
+  if (!draining || !currentQueue) {
+    return;
+  }
+  draining = false;
+  if (currentQueue.length) {
+    queue = currentQueue.concat(queue);
+  } else {
+    queueIndex = -1;
+  }
+  if (queue.length) {
+    drainQueue();
+  }
+}
+function drainQueue() {
+  if (draining) {
+    return;
+  }
+  var timeout = runTimeout(cleanUpNextTick);
+  draining = true;
+  var len = queue.length;
+  while (len) {
+    currentQueue = queue;
+    queue = [];
+    while (++queueIndex < len) {
+      if (currentQueue) {
+        currentQueue[queueIndex].run();
+      }
+    }
+    queueIndex = -1;
+    len = queue.length;
+  }
+  currentQueue = null;
+  draining = false;
+  runClearTimeout(timeout);
+}
+process.nextTick = function (fun) {
+  var args = new Array(arguments.length - 1);
+  if (arguments.length > 1) {
+    for (var i = 1; i < arguments.length; i++) {
+      args[i - 1] = arguments[i];
+    }
+  }
+  queue.push(new Item(fun, args));
+  if (queue.length === 1 && !draining) {
+    runTimeout(drainQueue);
+  }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+  this.fun = fun;
+  this.array = array;
+}
+Item.prototype.run = function () {
+  this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+function noop() {}
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+process.listeners = function (name) {
+  return [];
+};
+process.binding = function (name) {
+  throw new Error('process.binding is not supported');
+};
+process.cwd = function () {
+  return '/';
+};
+process.chdir = function (dir) {
+  throw new Error('process.chdir is not supported');
+};
+process.umask = function () {
+  return 0;
+};
+},{}],"node_modules/util/util.js":[function(require,module,exports) {
+var process = require("process");
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+var getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors || function getOwnPropertyDescriptors(obj) {
+  var keys = Object.keys(obj);
+  var descriptors = {};
+  for (var i = 0; i < keys.length; i++) {
+    descriptors[keys[i]] = Object.getOwnPropertyDescriptor(obj, keys[i]);
+  }
+  return descriptors;
+};
+var formatRegExp = /%[sdj%]/g;
+exports.format = function (f) {
+  if (!isString(f)) {
+    var objects = [];
+    for (var i = 0; i < arguments.length; i++) {
+      objects.push(inspect(arguments[i]));
+    }
+    return objects.join(' ');
+  }
+  var i = 1;
+  var args = arguments;
+  var len = args.length;
+  var str = String(f).replace(formatRegExp, function (x) {
+    if (x === '%%') return '%';
+    if (i >= len) return x;
+    switch (x) {
+      case '%s':
+        return String(args[i++]);
+      case '%d':
+        return Number(args[i++]);
+      case '%j':
+        try {
+          return JSON.stringify(args[i++]);
+        } catch (_) {
+          return '[Circular]';
+        }
+      default:
+        return x;
+    }
+  });
+  for (var x = args[i]; i < len; x = args[++i]) {
+    if (isNull(x) || !isObject(x)) {
+      str += ' ' + x;
+    } else {
+      str += ' ' + inspect(x);
+    }
+  }
+  return str;
+};
+
+// Mark that a method should not be used.
+// Returns a modified function which warns once by default.
+// If --no-deprecation is set, then it is a no-op.
+exports.deprecate = function (fn, msg) {
+  if (typeof process !== 'undefined' && process.noDeprecation === true) {
+    return fn;
+  }
+
+  // Allow for deprecating things in the process of starting up.
+  if (typeof process === 'undefined') {
+    return function () {
+      return exports.deprecate(fn, msg).apply(this, arguments);
+    };
+  }
+  var warned = false;
+  function deprecated() {
+    if (!warned) {
+      if (process.throwDeprecation) {
+        throw new Error(msg);
+      } else if (process.traceDeprecation) {
+        console.trace(msg);
+      } else {
+        console.error(msg);
+      }
+      warned = true;
+    }
+    return fn.apply(this, arguments);
+  }
+  return deprecated;
+};
+var debugs = {};
+var debugEnviron;
+exports.debuglog = function (set) {
+  if (isUndefined(debugEnviron)) debugEnviron = undefined || '';
+  set = set.toUpperCase();
+  if (!debugs[set]) {
+    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
+      var pid = process.pid;
+      debugs[set] = function () {
+        var msg = exports.format.apply(exports, arguments);
+        console.error('%s %d: %s', set, pid, msg);
+      };
+    } else {
+      debugs[set] = function () {};
+    }
+  }
+  return debugs[set];
+};
+
+/**
+ * Echos the value of a value. Trys to print the value out
+ * in the best way possible given the different types.
+ *
+ * @param {Object} obj The object to print out.
+ * @param {Object} opts Optional options object that alters the output.
+ */
+/* legacy: obj, showHidden, depth, colors*/
+function inspect(obj, opts) {
+  // default options
+  var ctx = {
+    seen: [],
+    stylize: stylizeNoColor
+  };
+  // legacy...
+  if (arguments.length >= 3) ctx.depth = arguments[2];
+  if (arguments.length >= 4) ctx.colors = arguments[3];
+  if (isBoolean(opts)) {
+    // legacy...
+    ctx.showHidden = opts;
+  } else if (opts) {
+    // got an "options" object
+    exports._extend(ctx, opts);
+  }
+  // set default options
+  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
+  if (isUndefined(ctx.depth)) ctx.depth = 2;
+  if (isUndefined(ctx.colors)) ctx.colors = false;
+  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
+  if (ctx.colors) ctx.stylize = stylizeWithColor;
+  return formatValue(ctx, obj, ctx.depth);
+}
+exports.inspect = inspect;
+
+// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+inspect.colors = {
+  'bold': [1, 22],
+  'italic': [3, 23],
+  'underline': [4, 24],
+  'inverse': [7, 27],
+  'white': [37, 39],
+  'grey': [90, 39],
+  'black': [30, 39],
+  'blue': [34, 39],
+  'cyan': [36, 39],
+  'green': [32, 39],
+  'magenta': [35, 39],
+  'red': [31, 39],
+  'yellow': [33, 39]
+};
+
+// Don't use 'blue' not visible on cmd.exe
+inspect.styles = {
+  'special': 'cyan',
+  'number': 'yellow',
+  'boolean': 'yellow',
+  'undefined': 'grey',
+  'null': 'bold',
+  'string': 'green',
+  'date': 'magenta',
+  // "name": intentionally not styling
+  'regexp': 'red'
+};
+function stylizeWithColor(str, styleType) {
+  var style = inspect.styles[styleType];
+  if (style) {
+    return '\u001b[' + inspect.colors[style][0] + 'm' + str + '\u001b[' + inspect.colors[style][1] + 'm';
+  } else {
+    return str;
+  }
+}
+function stylizeNoColor(str, styleType) {
+  return str;
+}
+function arrayToHash(array) {
+  var hash = {};
+  array.forEach(function (val, idx) {
+    hash[val] = true;
+  });
+  return hash;
+}
+function formatValue(ctx, value, recurseTimes) {
+  // Provide a hook for user-specified inspect functions.
+  // Check that value is an object with an inspect function on it
+  if (ctx.customInspect && value && isFunction(value.inspect) &&
+  // Filter out the util module, it's inspect function is special
+  value.inspect !== exports.inspect &&
+  // Also filter out any prototype objects using the circular check.
+  !(value.constructor && value.constructor.prototype === value)) {
+    var ret = value.inspect(recurseTimes, ctx);
+    if (!isString(ret)) {
+      ret = formatValue(ctx, ret, recurseTimes);
+    }
+    return ret;
+  }
+
+  // Primitive types cannot have properties
+  var primitive = formatPrimitive(ctx, value);
+  if (primitive) {
+    return primitive;
+  }
+
+  // Look up the keys of the object.
+  var keys = Object.keys(value);
+  var visibleKeys = arrayToHash(keys);
+  if (ctx.showHidden) {
+    keys = Object.getOwnPropertyNames(value);
+  }
+
+  // IE doesn't make error fields non-enumerable
+  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
+  if (isError(value) && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
+    return formatError(value);
+  }
+
+  // Some type of object without properties can be shortcutted.
+  if (keys.length === 0) {
+    if (isFunction(value)) {
+      var name = value.name ? ': ' + value.name : '';
+      return ctx.stylize('[Function' + name + ']', 'special');
+    }
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    }
+    if (isDate(value)) {
+      return ctx.stylize(Date.prototype.toString.call(value), 'date');
+    }
+    if (isError(value)) {
+      return formatError(value);
+    }
+  }
+  var base = '',
+    array = false,
+    braces = ['{', '}'];
+
+  // Make Array say that they are Array
+  if (isArray(value)) {
+    array = true;
+    braces = ['[', ']'];
+  }
+
+  // Make functions say that they are functions
+  if (isFunction(value)) {
+    var n = value.name ? ': ' + value.name : '';
+    base = ' [Function' + n + ']';
+  }
+
+  // Make RegExps say that they are RegExps
+  if (isRegExp(value)) {
+    base = ' ' + RegExp.prototype.toString.call(value);
+  }
+
+  // Make dates with properties first say the date
+  if (isDate(value)) {
+    base = ' ' + Date.prototype.toUTCString.call(value);
+  }
+
+  // Make error with message first say the error
+  if (isError(value)) {
+    base = ' ' + formatError(value);
+  }
+  if (keys.length === 0 && (!array || value.length == 0)) {
+    return braces[0] + base + braces[1];
+  }
+  if (recurseTimes < 0) {
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    } else {
+      return ctx.stylize('[Object]', 'special');
+    }
+  }
+  ctx.seen.push(value);
+  var output;
+  if (array) {
+    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
+  } else {
+    output = keys.map(function (key) {
+      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
+    });
+  }
+  ctx.seen.pop();
+  return reduceToSingleString(output, base, braces);
+}
+function formatPrimitive(ctx, value) {
+  if (isUndefined(value)) return ctx.stylize('undefined', 'undefined');
+  if (isString(value)) {
+    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '').replace(/'/g, "\\'").replace(/\\"/g, '"') + '\'';
+    return ctx.stylize(simple, 'string');
+  }
+  if (isNumber(value)) return ctx.stylize('' + value, 'number');
+  if (isBoolean(value)) return ctx.stylize('' + value, 'boolean');
+  // For some reason typeof null is "object", so special case here.
+  if (isNull(value)) return ctx.stylize('null', 'null');
+}
+function formatError(value) {
+  return '[' + Error.prototype.toString.call(value) + ']';
+}
+function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
+  var output = [];
+  for (var i = 0, l = value.length; i < l; ++i) {
+    if (hasOwnProperty(value, String(i))) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys, String(i), true));
+    } else {
+      output.push('');
+    }
+  }
+  keys.forEach(function (key) {
+    if (!key.match(/^\d+$/)) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys, key, true));
+    }
+  });
+  return output;
+}
+function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
+  var name, str, desc;
+  desc = Object.getOwnPropertyDescriptor(value, key) || {
+    value: value[key]
+  };
+  if (desc.get) {
+    if (desc.set) {
+      str = ctx.stylize('[Getter/Setter]', 'special');
+    } else {
+      str = ctx.stylize('[Getter]', 'special');
+    }
+  } else {
+    if (desc.set) {
+      str = ctx.stylize('[Setter]', 'special');
+    }
+  }
+  if (!hasOwnProperty(visibleKeys, key)) {
+    name = '[' + key + ']';
+  }
+  if (!str) {
+    if (ctx.seen.indexOf(desc.value) < 0) {
+      if (isNull(recurseTimes)) {
+        str = formatValue(ctx, desc.value, null);
+      } else {
+        str = formatValue(ctx, desc.value, recurseTimes - 1);
+      }
+      if (str.indexOf('\n') > -1) {
+        if (array) {
+          str = str.split('\n').map(function (line) {
+            return '  ' + line;
+          }).join('\n').substr(2);
+        } else {
+          str = '\n' + str.split('\n').map(function (line) {
+            return '   ' + line;
+          }).join('\n');
+        }
+      }
+    } else {
+      str = ctx.stylize('[Circular]', 'special');
+    }
+  }
+  if (isUndefined(name)) {
+    if (array && key.match(/^\d+$/)) {
+      return str;
+    }
+    name = JSON.stringify('' + key);
+    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
+      name = name.substr(1, name.length - 2);
+      name = ctx.stylize(name, 'name');
+    } else {
+      name = name.replace(/'/g, "\\'").replace(/\\"/g, '"').replace(/(^"|"$)/g, "'");
+      name = ctx.stylize(name, 'string');
+    }
+  }
+  return name + ': ' + str;
+}
+function reduceToSingleString(output, base, braces) {
+  var numLinesEst = 0;
+  var length = output.reduce(function (prev, cur) {
+    numLinesEst++;
+    if (cur.indexOf('\n') >= 0) numLinesEst++;
+    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
+  }, 0);
+  if (length > 60) {
+    return braces[0] + (base === '' ? '' : base + '\n ') + ' ' + output.join(',\n  ') + ' ' + braces[1];
+  }
+  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
+}
+
+// NOTE: These type checking functions intentionally don't use `instanceof`
+// because it is fragile and can be easily faked with `Object.create()`.
+function isArray(ar) {
+  return Array.isArray(ar);
+}
+exports.isArray = isArray;
+function isBoolean(arg) {
+  return typeof arg === 'boolean';
+}
+exports.isBoolean = isBoolean;
+function isNull(arg) {
+  return arg === null;
+}
+exports.isNull = isNull;
+function isNullOrUndefined(arg) {
+  return arg == null;
+}
+exports.isNullOrUndefined = isNullOrUndefined;
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+exports.isNumber = isNumber;
+function isString(arg) {
+  return typeof arg === 'string';
+}
+exports.isString = isString;
+function isSymbol(arg) {
+  return typeof arg === 'symbol';
+}
+exports.isSymbol = isSymbol;
+function isUndefined(arg) {
+  return arg === void 0;
+}
+exports.isUndefined = isUndefined;
+function isRegExp(re) {
+  return isObject(re) && objectToString(re) === '[object RegExp]';
+}
+exports.isRegExp = isRegExp;
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+exports.isObject = isObject;
+function isDate(d) {
+  return isObject(d) && objectToString(d) === '[object Date]';
+}
+exports.isDate = isDate;
+function isError(e) {
+  return isObject(e) && (objectToString(e) === '[object Error]' || e instanceof Error);
+}
+exports.isError = isError;
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+exports.isFunction = isFunction;
+function isPrimitive(arg) {
+  return arg === null || typeof arg === 'boolean' || typeof arg === 'number' || typeof arg === 'string' || typeof arg === 'symbol' ||
+  // ES6 symbol
+  typeof arg === 'undefined';
+}
+exports.isPrimitive = isPrimitive;
+exports.isBuffer = require('./support/isBuffer');
+function objectToString(o) {
+  return Object.prototype.toString.call(o);
+}
+function pad(n) {
+  return n < 10 ? '0' + n.toString(10) : n.toString(10);
+}
+var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// 26 Feb 16:19:34
+function timestamp() {
+  var d = new Date();
+  var time = [pad(d.getHours()), pad(d.getMinutes()), pad(d.getSeconds())].join(':');
+  return [d.getDate(), months[d.getMonth()], time].join(' ');
+}
+
+// log is just a thin wrapper to console.log that prepends a timestamp
+exports.log = function () {
+  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
+};
+
+/**
+ * Inherit the prototype methods from one constructor into another.
+ *
+ * The Function.prototype.inherits from lang.js rewritten as a standalone
+ * function (not on Function.prototype). NOTE: If this file is to be loaded
+ * during bootstrapping this function needs to be rewritten using some native
+ * functions as prototype setup using normal JavaScript does not work as
+ * expected during bootstrapping (see mirror.js in r114903).
+ *
+ * @param {function} ctor Constructor function which needs to inherit the
+ *     prototype.
+ * @param {function} superCtor Constructor function to inherit prototype from.
+ */
+exports.inherits = require('inherits');
+exports._extend = function (origin, add) {
+  // Don't do anything if add isn't an object
+  if (!add || !isObject(add)) return origin;
+  var keys = Object.keys(add);
+  var i = keys.length;
+  while (i--) {
+    origin[keys[i]] = add[keys[i]];
+  }
+  return origin;
+};
+function hasOwnProperty(obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
+}
+var kCustomPromisifiedSymbol = typeof Symbol !== 'undefined' ? Symbol('util.promisify.custom') : undefined;
+exports.promisify = function promisify(original) {
+  if (typeof original !== 'function') throw new TypeError('The "original" argument must be of type Function');
+  if (kCustomPromisifiedSymbol && original[kCustomPromisifiedSymbol]) {
+    var fn = original[kCustomPromisifiedSymbol];
+    if (typeof fn !== 'function') {
+      throw new TypeError('The "util.promisify.custom" argument must be of type Function');
+    }
+    Object.defineProperty(fn, kCustomPromisifiedSymbol, {
+      value: fn,
+      enumerable: false,
+      writable: false,
+      configurable: true
+    });
+    return fn;
+  }
+  function fn() {
+    var promiseResolve, promiseReject;
+    var promise = new Promise(function (resolve, reject) {
+      promiseResolve = resolve;
+      promiseReject = reject;
+    });
+    var args = [];
+    for (var i = 0; i < arguments.length; i++) {
+      args.push(arguments[i]);
+    }
+    args.push(function (err, value) {
+      if (err) {
+        promiseReject(err);
+      } else {
+        promiseResolve(value);
+      }
+    });
+    try {
+      original.apply(this, args);
+    } catch (err) {
+      promiseReject(err);
+    }
+    return promise;
+  }
+  Object.setPrototypeOf(fn, Object.getPrototypeOf(original));
+  if (kCustomPromisifiedSymbol) Object.defineProperty(fn, kCustomPromisifiedSymbol, {
+    value: fn,
+    enumerable: false,
+    writable: false,
+    configurable: true
+  });
+  return Object.defineProperties(fn, getOwnPropertyDescriptors(original));
+};
+exports.promisify.custom = kCustomPromisifiedSymbol;
+function callbackifyOnRejected(reason, cb) {
+  // `!reason` guard inspired by bluebird (Ref: https://goo.gl/t5IS6M).
+  // Because `null` is a special error value in callbacks which means "no error
+  // occurred", we error-wrap so the callback consumer can distinguish between
+  // "the promise rejected with null" or "the promise fulfilled with undefined".
+  if (!reason) {
+    var newReason = new Error('Promise was rejected with a falsy value');
+    newReason.reason = reason;
+    reason = newReason;
+  }
+  return cb(reason);
+}
+function callbackify(original) {
+  if (typeof original !== 'function') {
+    throw new TypeError('The "original" argument must be of type Function');
+  }
+
+  // We DO NOT return the promise as it gives the user a false sense that
+  // the promise is actually somehow related to the callback's execution
+  // and that the callback throwing will reject the promise.
+  function callbackified() {
+    var args = [];
+    for (var i = 0; i < arguments.length; i++) {
+      args.push(arguments[i]);
+    }
+    var maybeCb = args.pop();
+    if (typeof maybeCb !== 'function') {
+      throw new TypeError('The last argument must be of type Function');
+    }
+    var self = this;
+    var cb = function () {
+      return maybeCb.apply(self, arguments);
+    };
+    // In true node style we process the callback on `nextTick` with all the
+    // implications (stack, `uncaughtException`, `async_hooks`)
+    original.apply(this, args).then(function (ret) {
+      process.nextTick(cb, null, ret);
+    }, function (rej) {
+      process.nextTick(callbackifyOnRejected, rej, cb);
+    });
+  }
+  Object.setPrototypeOf(callbackified, Object.getPrototypeOf(original));
+  Object.defineProperties(callbackified, getOwnPropertyDescriptors(original));
+  return callbackified;
+}
+exports.callbackify = callbackify;
+},{"./support/isBuffer":"node_modules/util/support/isBufferBrowser.js","inherits":"node_modules/util/node_modules/inherits/inherits_browser.js","process":"node_modules/process/browser.js"}],"node_modules/log.js/log.js":[function(require,module,exports) {
+'use strict'
+
+var util = require('util');
+
+var log = function(obj, levels, fn) {
+  (fn || console.log)(util.inspect(obj, true, levels || 10));
+};
+
+exports = module.exports = log;
+
+},{"util":"node_modules/util/util.js"}],"node_modules/konva/lib/Global.js":[function(require,module,exports) {
 var global = arguments[3];
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -11100,76 +11925,37 @@ Konva._injectGlobal(Konva);
 exports['default'] = Konva;
 module.exports = exports['default'];
 
-},{"./_FullInternals":"node_modules/konva/lib/_FullInternals.js"}],"src/index.js":[function(require,module,exports) {
+},{"./_FullInternals":"node_modules/konva/lib/_FullInternals.js"}],"src/drawPolygon.js":[function(require,module,exports) {
 "use strict";
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.drawPolygon = drawPolygon;
 var _konva = require("konva");
-//polygon corners for the wall or floor (in pixels, but also millimeters)
-var verticesArray = [100, 100, 1000, 40, 1500, 2000, 500, 2000, 500, 500, 100, 500];
+function drawPolygon(vertices) {
+  // Create a new Polygon shape
+  var polygon = new _konva.Line({
+    points: vertices,
+    fill: "pink",
+    stroke: "black",
+    strokeWidth: 1,
+    closed: true
+    //draggable: true
+  });
 
-//random shape maker for testing
-//let verticesArray = [0, 0, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000];
-var shiftX = 10;
-var shiftY = 10;
-function shiftPolygon(polygonPoints, xDistance, yDistance) {
-  var i;
-  while (i < polygonPoints.length) {
-    polygonPoints[i] = polygonPoints[i] + xDistance;
-    i++;
-    polygonPoints[i] = polygonPoints[i] + yDistance;
-    i++;
-  }
-  return polygonPoints;
-  console.log("polypouints", polygonPoints);
+  return polygon;
 }
-;
-var shiftedPolygon = verticesArray;
-console.log("shifted", shiftPolygon);
-var wall = drawPolygon(verticesArray);
-//zoom of stage
-var scale = 1;
-fillWallWithTiles(wall, 400, 100, 10);
+},{"konva":"node_modules/konva/lib/index.js"}],"src/isPointInsidePolygon.js":[function(require,module,exports) {
+"use strict";
 
-//do lines intersect? use this to find all intersections of polygon and tiles.
-//TODO make function to offset polygon line toward tile the distance of a groutline
-//TODO find intersections of offsetPolygoneBoundaryByGap and tile, then make a new pulygon that will represent a cut tile from those points
-//TODO function that is called as each tile is produced to see if any of its lines intersect with the polygon (bug? should I offset the polugon in to start with so that tiles that come near to but not touch the polygon are detected? Yes! will catch uncut tiles on the edge that would be a pain in the ass)
-//TODO function that checks to see if some part of the tile is inside the polygon
-//just walk over the points of the tile with this and if a corner fails we can cut it off. If all fail the tile shouldn't get pushed to parent
-
-//TODO unfuck that while loop that controls the tile placement
-function intersect(x1, y1, x2, y2, x3, y3, x4, y4) {
-  // Check if none of the lines are of length 0
-  if (x1 === x2 && y1 === y2 || x3 === x4 && y3 === y4) {
-    return false;
-  }
-  var denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
-
-  // Lines are parallel
-  if (denominator === 0) {
-    return false;
-  }
-  var ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator;
-  var ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator;
-
-  // is the intersection along the segments
-  if (ua < 0 || ua > 1 || ub < 0 || ub > 1) {
-    return false;
-  }
-
-  // Return a object with the x and y coordinates of the intersection
-  var x = x1 + ua * (x2 - x1);
-  var y = y1 + ua * (y2 - y1);
-  return {
-    x: x,
-    y: y
-  };
-}
-
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.isPointInsidePolygon = isPointInsidePolygon;
 // line intercept math by Paul Bourke http://paulbourke.net/geometry/pointlineplane/
 // Determine the intersection point of two line segments
 // Return FALSE if the lines don't intersect
-
 // Check if a point is inside a polygon
 function isPointInsidePolygon(vertices, x, y) {
   // Initialize a counter for the number of intersections
@@ -11191,60 +11977,188 @@ function isPointInsidePolygon(vertices, x, y) {
   // Return true if the number of intersections is odd
   return count % 2 === 1;
 }
-function drawPolygon(vertices) {
-  // Create a new Polygon shape
-  var polygon = new _konva.Line({
-    points: vertices,
-    fill: "pink",
-    stroke: "black",
-    strokeWidth: 2,
-    closed: true,
-    draggable: true
-  });
-  //console.log("This one:", polygon);
-  return polygon;
+},{}],"src/checkCornersPushToLayer.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.checkCornersPushToLayer = checkCornersPushToLayer;
+var _isPointInsidePolygon = require("./isPointInsidePolygon");
+function checkCornersPushToLayer(tile, polygon, text) {
+  if ((0, _isPointInsidePolygon.isPointInsidePolygon)(polygon.attrs.points, tile.attrs.x, tile.attrs.y) || (0, _isPointInsidePolygon.isPointInsidePolygon)(polygon.attrs.points, tile.attrs.x, tile.attrs.y + tile.attrs.height) || (0, _isPointInsidePolygon.isPointInsidePolygon)(polygon.attrs.points, tile.attrs.x + tile.attrs.width, tile.attrs.y) || (0, _isPointInsidePolygon.isPointInsidePolygon)(polygon.attrs.points, tile.attrs.x + tile.attrs.width, tile.attrs.y + tile.attrs.height)) {
+    polygon.getParent().add(tile);
+    polygon.getParent().add(text);
+  }
 }
-console.log("wallpoints;", wall.getPoints());
-console.log(intersect(0, 0, 100, 100, 0, 100, 100, 0));
-console.log(wall.getPoints());
+},{"./isPointInsidePolygon":"src/isPointInsidePolygon.js"}],"src/intersect.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.intersect = intersect;
+//console.log(getSlopeAngle([0, 0], [2, 3]));
+// 56.309932474020215
+//TODO unfuck that while loop that controls the tile placement
+function intersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+  // Check if none of the lines are of length 0
+  if (x1 === x2 && y1 === y2 || x3 === x4 && y3 === y4) {
+    return false;
+  }
+  var denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+
+  // Lines are parallel
+  if (denominator === 0) {
+    console.log("lines are parallel");
+    return false;
+  }
+  var ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator;
+  var ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator;
+
+  // is the intersection along the segments
+  if (ua < 0 || ua > 1 || ub < 0 || ub > 1) {
+    return false;
+  }
+
+  // Return a object with the x and y coordinates of the intersection
+  var x = x1 + ua * (x2 - x1);
+  var y = y1 + ua * (y2 - y1);
+  return {
+    x: x,
+    y: y
+  };
+}
+},{}],"src/flagCorners.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.flagCorners = flagCorners;
+var _konva = require("konva");
+var _intersect = require("./intersect");
+var _isPointInsidePolygon = require("./isPointInsidePolygon");
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
+function flagCorners(tile, polygon) {
+  var tilePoints = [].concat(_toConsumableArray(tile.attrs.points), [tile.attrs.points[0], tile.attrs.points[1], tile.attrs.points[2], tile.attrs.points[3]]);
+  var polygonPoints = [].concat(_toConsumableArray(polygon.attrs.points), [polygon.attrs.points[0], polygon.attrs.points[1], polygon.attrs.points[2], polygon.attrs.points[3]]);
+  var hasIntersection = 0;
+  var beenPushed = 0;
+  var cutTile = new _konva.Line({
+    fill: "blue",
+    stroke: "green",
+    strokeWidth: 4,
+    closed: true,
+    points: []
+  });
+  for (var i = 0; i < polygonPoints.length; i += 2) {
+    beenPushed = 0;
+    for (var j = 0; j < tilePoints.length; j += 2) {
+      var intersection = (0, _intersect.intersect)(polygonPoints[i], polygonPoints[i + 1], polygonPoints[i + 2], polygonPoints[i + 3], tilePoints[j], tilePoints[j + 1], tilePoints[j + 2], tilePoints[j + 3]);
+      if (intersection.x && !beenPushed) {
+        hasIntersection = 1;
+        cutTile.attrs.points.push(intersection.x, intersection.y);
+        beenPushed = 1;
+        var intersectionPoint = new _konva.Rect({
+          x: intersection.x,
+          y: intersection.y,
+          height: 15,
+          width: 15,
+          rotation: -45,
+          fill: "purple"
+        });
+        polygon.getParent().add(intersectionPoint);
+      }
+      if ((0, _isPointInsidePolygon.isPointInsidePolygon)(tile.attrs.points, polygon.attrs.points[i], polygon.attrs.points[i + 1])) {
+        hasIntersection = 1;
+        cutTile.attrs.points.push(polygon.attrs.points[i], polygon.attrs.points[i + 1]);
+        beenPushed = 1;
+        var _intersectionPoint = new _konva.Rect({
+          x: polygon.attrs.points[i],
+          y: polygon.attrs.points[i + 1],
+          height: 10,
+          width: 30,
+          rotation: 45,
+          fill: "red"
+        });
+        polygon.getParent().add(_intersectionPoint);
+      }
+      ;
+      if (hasIntersection && (0, _isPointInsidePolygon.isPointInsidePolygon)(polygon.attrs.points, tile.attrs.points[j], tile.attrs.points[j + 1])) {
+        cutTile.attrs.points.push(tile.attrs.points[j], tile.attrs.points[j + 1]);
+      }
+      ;
+    }
+    console.log(cutTile.attrs.points);
+    polygon.getParent().add(cutTile);
+    //if (cutTile.attrs.points[0]){polygon.getParent().add(cutTile)};
+  }
+}
+},{"konva":"node_modules/konva/lib/index.js","./intersect":"src/intersect.js","./isPointInsidePolygon":"src/isPointInsidePolygon.js"}],"src/fillWallWithTiles.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fillWallWithTiles = fillWallWithTiles;
+var _konva = require("konva");
+var _index = require("./index");
+var _checkCornersPushToLayer = require("./checkCornersPushToLayer");
+var _flagCorners = require("./flagCorners");
+var _isPointInsidePolygon = require("./isPointInsidePolygon");
 function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
   //TODO Set the dimensions of the canvas based on the polygon's points
-
   var stage = new _konva.Stage({
     container: document.getElementById("app"),
-    width: window.innerWidth,
+    width: 3000,
+    //window.innerWidth,
     height: window.innerHeight,
     draggable: false,
     pos: 1000
   });
   stage.scale({
-    x: scale,
-    y: scale
+    x: _index.scale,
+    y: _index.scale
   });
   var layer = new _konva.Layer();
   stage.add(layer);
+  var testRect = new _konva.Rect({
+    x: 839.33,
+    y: 68.19999999999999,
+    width: 800,
+    height: 200,
+    fill: "blue",
+    stroke: "black",
+    strokeWidth: 1
+    //points: [testRect.x(),0,0,0,0,0,0,0]
+  });
 
+  //console.log(testRect.attrs.points[0]);
   // Add the polygon to the layer
   layer.add(polygon);
-
+  //layer.add(testRect);
   // Add the layer to the stage
   stage.add(layer);
+
+  //testRect.intersects(0,0,0,0);
   stage.batchDraw();
   // Initialize the x and y coordinates of the FIRST tile, top left right now
-
   var x = gap;
   var y = gap;
   var rowCount = 0;
   var counterY = 0;
 
   // Keep placing tiles until the polygon is filled
-  while (y < 2000) {
+  while (y < 100) {
     // Check if the current position is inside the polygon
-
     counterY++;
-    if (x < 2000) {
-      //isPointInsidePolygon(points, x, y)) {
-      // Create a new tile at the current position
+    if (x < 800) {
       var tile = new _konva.Rect({
         x: x,
         y: y,
@@ -11252,36 +12166,37 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
         height: tileHeight,
         fill: "transparent",
         stroke: "black",
-        strokeWidth: 1
+        strokeWidth: 1,
+        points: [x, y, x + tileWidth, y, x + tileWidth, y + tileHeight, x, y + tileHeight]
       });
+      //console.log(tile.attrs.points);
       var text = new _konva.Text({
         x: x + tileWidth / 3,
         y: y + tileHeight / 3,
-        fontSize: 30,
+        fontSize: 8,
         fill: "black",
         text: "x:".concat(x, " y:").concat(y)
       });
-
-      //counterY += tileHeight + gap;
-      // Add the tile to the polygon's parent group
-      //console.log(tile);
-      //console.log("x:", tile.attrs.x)
-      //console.log("inside", isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y));
-      //checks if x-y pair is in polygon before pushing to parent. 
-      //TODO check all corners. xy,x-y+height,x+width-y, x+width-y+height
-      console.log("alksdj", isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y), "PPP", isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y + tile.attrs.height), "PPP", isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y), "PPP", isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y + tile.attrs.width));
-      if (isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y) || isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y + tile.attrs.height) || isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y) || isPointInsidePolygon(verticesArray, tile.attrs.x + tile.attrs.width, tile.attrs.y + tile.attrs.height)) {
-        polygon.getParent().add(tile);
-        polygon.getParent().add(text);
+      var preservedCorners = tile.attrs.points;
+      for (var k = 0; k < tile.attrs.points.length; k += 2) {
+        if ((0, _isPointInsidePolygon.isPointInsidePolygon)(polygon, tile.attrs.points[k], tile.attrs.points[k + 1])) {
+          preservedCorners[k] = tile.attrs.points[k];
+          preservedCorners[k + 1] = tile.attrs.points[k + 1];
+        }
       }
+      ;
+      (0, _flagCorners.flagCorners)(tile, polygon);
+
+      //each one of these should push to an array if true in their proper place in the array to be made into a line. It doesn't matter as long as they're in order, how do you do that for notches?
+
+      (0, _checkCornersPushToLayer.checkCornersPushToLayer)(tile, polygon, text);
     }
 
     // Move the x coordinate to the right by the width of the tile plus the gap
-
     x += tileWidth + gap;
 
     // If the x coordinate is past the right edge of the polygon, move to the next row
-    if (x >= 2000) {
+    if (x >= 1200) {
       rowCount++;
       //this part does the subway tile pattern
       if (rowCount % 2) {
@@ -11293,7 +12208,55 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
     }
   }
 }
-},{"konva":"node_modules/konva/lib/index.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"konva":"node_modules/konva/lib/index.js","./index":"src/index.js","./checkCornersPushToLayer":"src/checkCornersPushToLayer.js","./flagCorners":"src/flagCorners.js","./isPointInsidePolygon":"src/isPointInsidePolygon.js"}],"src/trimRect.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.trimRect = trimRect;
+//bathroom above the bench
+//let verticesArray = [0, 0, 839, 0, 848, 1860, 0, 1854];
+function trimRect(rect) {
+  var pointsOfRect = rect.points;
+  return pointsOfRect;
+}
+},{}],"src/index.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.verticesArray = exports.scale = void 0;
+var _log = _interopRequireDefault(require("log.js"));
+var _drawPolygon = require("./drawPolygon");
+var _fillWallWithTiles = require("./fillWallWithTiles");
+var _trimRect = _interopRequireDefault(require("./trimRect"));
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+//polygon corners for the wall or floor (in pixels, but also millimeters)
+var verticesArray = [10, 10, 539, 10, 848, 1860, 0, 1854];
+exports.verticesArray = verticesArray;
+(0, _log.default)("log.js is a shortened console.log and it shows how to use export to clean this shit up.");
+
+//random shape maker for testing
+//let verticesArray = [0, 0, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000];
+var wall = (0, _drawPolygon.drawPolygon)(verticesArray);
+
+//TODO make function to offset polygon line toward tile the distance of a groutline (or just offset on a per tile basis to eliminate weird corner behavior)
+//TODO find intersections of offsetPolygoneBoundaryByGap and tile, then make a new pulygon that will represent a cut tile from those points
+//TODO function that is called as each tile is produced to see if any of its lines intersect with the polygon (bug? should I offset the polugon in to start with so that tiles that come near to but not touch the polygon are detected? Yes! will catch uncut tiles on the edge that would be a pain in the ass)
+//TODO function that checks to see if some part of the tile is inside the polygon
+//just walk over the points of the tile with this and if a corner fails we can cut it off. If all fail the tile shouldn't get pushed to parent
+//midpoint formula
+//const midpoint = ([x1, y1], [x2, y2]) => [(x1 + x2) / 2, (y1 + y2) / 2];
+//const mid = midpoint([150,50],[0,0]);
+//console.log(mid);
+
+//zoom of stage
+var scale = 2.5;
+exports.scale = scale;
+(0, _fillWallWithTiles.fillWallWithTiles)(wall, 200, 65, 1.6);
+},{"log.js":"node_modules/log.js/log.js","./drawPolygon":"src/drawPolygon.js","./fillWallWithTiles":"src/fillWallWithTiles.js","./trimRect":"src/trimRect.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -11318,7 +12281,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "43651" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "49854" + '/');
   ws.onmessage = function (event) {
     checkedAssets = {};
     assetsToAccept = [];
