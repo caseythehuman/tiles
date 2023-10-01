@@ -1,6 +1,6 @@
 import { Stage, Layer, Rect, Line, Text } from "konva";
 //polygon corners for the wall or floor (in pixels, but also millimeters)
-let verticesArray = [10, 10, 539, 10, 848, 1860, 0, 1854];
+let verticesArray = [100, 100, 539, 200, 848, 860, 200, 1854];
 
 //bathroom above the bench
 //let verticesArray = [0, 0, 839, 0, 848, 1860, 0, 1854];
@@ -122,7 +122,7 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
 
   const layer = new Layer();
   stage.add(layer);
-
+  
   const testRect = new Rect({
     x: 839.33,
     y: 68.19999999999999,
@@ -147,18 +147,18 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
   stage.batchDraw();
   // Initialize the x and y coordinates of the FIRST tile, top left right now
 
-  var x = gap;
-  var y = gap;
+  var x = 0;
+  var y = 0;
   var rowCount = 0;
 
   var counterY = 0;
 
   // Keep placing tiles until the polygon is filled
-  while (y < 200) {
+  while (y < 5000) {
     // Check if the current position is inside the polygon
 
     counterY++;
-    if (x < 900) {
+    if (x < 20000) {
       var tile = new Rect({
         x: x,
         y: y,
@@ -211,6 +211,11 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
             polygon.getParent().add(intersectionPoint);
           }
         }
+                
+        var json = stage.toJSON();
+        // To save the JSON string to local storage or send it to a server
+        localStorage.setItem('konva_stage', json);
+        console.log("JSON\n" + json);
       }
 
       //each one of these should push to an array if true in their proper place in the array to be made into a line. It doesn't matter as long as they're in order, how do you do that for notches?
@@ -242,13 +247,13 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
     x += tileWidth + gap;
 
     // If the x coordinate is past the right edge of the polygon, move to the next row
-    if (x >= 1200) {
+    if (x >= 800) {
       rowCount++;
       //this part does the subway tile pattern
       if (rowCount % 2) {
         x = -tileWidth / 2;
       } else {
-        x = gap;
+        x = 0;
       }
       y += tileHeight + gap;
     }
