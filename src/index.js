@@ -1,9 +1,11 @@
 import { Stage, Layer, Rect, Line, Text } from "konva";
+import { findExtremes } from "./findExtremes";
 //polygon corners for the wall or floor (in pixels, but also millimeters)
-let verticesArray = [100, 100, 539, 200, 848, 860, 200, 1854];
+let verticesArray = [40, 80, 539, 200, 848, 860, 200, 1854];
 
-//bathroom above the bench
-//let verticesArray = [0, 0, 839, 0, 848, 1860, 0, 1854];
+//finds bounding box values for any polygon for use in starting pattern, returns an object with x-y pairs named leftmost, rightmost, highest, lowest ~'which means displays lowest on the screen which in JS means the greatest value of Y'
+//const extremes = findExtremes(verticesArray);
+//console.log(extremes);
 
 function trimRect(rect) {
   const pointsOfRect = rect.points;
@@ -11,7 +13,7 @@ function trimRect(rect) {
 }
 
 //random shape maker for testing
-//let verticesArray = [0, 0, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000];
+//let verticesArray = [0, 0, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000];
 const wall = drawPolygon(verticesArray);
 
 //zoom of stage
@@ -21,11 +23,12 @@ fillWallWithTiles(wall, 200, 65, 1.6);
 
 //do lines intersect? use this to find all intersections of polygon and tiles.
 //TODO make function to offset polygon line toward tile the distance of a groutline
-//TODO find intersections of offsetPolygoneBoundaryByGap and tile, then make a new pulygon that will represent a cut tile from those points
+//TODO find intersections of offsetPolygoneBoundaryByGap and tile, then make a new polygon that will represent a cut tile from those points
 //TODO function that is called as each tile is produced to see if any of its lines intersect with the polygon (bug? should I offset the polugon in to start with so that tiles that come near to but not touch the polygon are detected? Yes! will catch uncut tiles on the edge that would be a pain in the ass)
 //TODO function that checks to see if some part of the tile is inside the polygon
 //just walk over the points of the tile with this and if a corner fails we can cut it off. If all fail the tile shouldn't get pushed to parent
 
+//TODO round the floats to 1 decimal place, no way I'll have that many sig figs anyway
 //midpoint formula
 //const midpoint = ([x1, y1], [x2, y2]) => [(x1 + x2) / 2, (y1 + y2) / 2];
 //const mid = midpoint([150,50],[0,0]);
@@ -38,7 +41,6 @@ function getSlopeAngle(s1, s2) {
 //console.log(getSlopeAngle([0, 0], [2, 3]));
 // 56.309932474020215
 
-//TODO unfuck that while loop that controls the tile placement
 function intersect(x1, y1, x2, y2, x3, y3, x4, y4) {
   // Check if none of the lines are of length 0
   if ((x1 === x2 && y1 === y2) || (x3 === x4 && y3 === y4)) {
@@ -96,15 +98,19 @@ function isPointInsidePolygon(vertices, x, y) {
 
 function drawPolygon(vertices) {
   // Create a new Polygon shape
+  const extremesArray = findExtremes(vertices);
+  
   var polygon = new Line({
     points: vertices,
-    fill: "pink",
+    fill: "tan",
     stroke: "black",
     strokeWidth: 2,
-    closed: true
-    //draggable: true
+    closed: true,
+    extremes: extremesArray
+    //,draggable: true
   });
-  //console.log("This one:", polygon);
+  console.log("This one:", polygon.attrs.extremes.leftmost);
+  
   return polygon;
 }
 
@@ -116,49 +122,35 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
     width: window.innerWidth,
     height: window.innerHeight,
     draggable: false,
-    pos: 1000
+    pos: 2000
   });
   stage.scale({ x: scale, y: scale });
 
   const layer = new Layer();
   stage.add(layer);
   
-  const testRect = new Rect({
-    x: 839.33,
-    y: 68.19999999999999,
-    width: 800,
-    height: 200,
-    fill: "blue",
-    stroke: "black",
-    strokeWidth: 1
-    //points: [testRect.x(),0,0,0,0,0,0,0]
-  });
-
-  //console.log(testRect.attrs.points[0]);
-
-  // Add the polygon to the layer
+    // Add the polygon to the layer
   layer.add(polygon);
-  //layer.add(testRect);
+
   // Add the layer to the stage
   stage.add(layer);
 
-  //testRect.intersects(0,0,0,0);
-
   stage.batchDraw();
   // Initialize the x and y coordinates of the FIRST tile, top left right now
-
-  var x = 0;
-  var y = 0;
+  
+  //console.log("Other:", polygon.attrs.extremes.leftmost);
+  var x = polygon.attrs.extremes.leftmost[0]-tileWidth-gap;
+  var y = polygon.attrs.extremes.highest[1]-tileHeight-gap;
   var rowCount = 0;
 
   var counterY = 0;
 
   // Keep placing tiles until the polygon is filled
-  while (y < 5000) {
+  while (y < polygon.attrs.extremes.lowest[1]) {
     // Check if the current position is inside the polygon
 
     counterY++;
-    if (x < 20000) {
+    if (x < polygon.attrs.extremes.rightmost[0] + tileWidth) {
       var tile = new Rect({
         x: x,
         y: y,
@@ -180,11 +172,11 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
       });
       //console.log(tile.attrs.points);
       var text = new Text({
-        x: x + tileWidth / 3,
-        y: y + tileHeight / 3,
-        fontSize: 30,
+        x: (x + tileWidth / 3),
+        y: (y + tileHeight / 3),
+        fontSize: 20,
         fill: "black"
-        //text: `x:${x} y:${y}`
+        ,text: `x:${parseFloat(x).toFixed(1)} \ny:${parseFloat(y).toFixed(1)}`
       });
       for (let i = 0; i < 8; i += 2) {
         for (let j = 0; j < 8; j += 2) {
@@ -212,10 +204,11 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
           }
         }
                 
+        //to make this smaller during testing make the number of things in the damn stage smaller
         var json = stage.toJSON();
         // To save the JSON string to local storage or send it to a server
         localStorage.setItem('konva_stage', json);
-        console.log("JSON\n" + json);
+        //console.log("JSON\n" + json);
       }
 
       //each one of these should push to an array if true in their proper place in the array to be made into a line. It doesn't matter as long as they're in order, how do you do that for notches?

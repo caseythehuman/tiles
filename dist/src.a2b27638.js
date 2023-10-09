@@ -11100,15 +11100,57 @@ Konva._injectGlobal(Konva);
 exports['default'] = Konva;
 module.exports = exports['default'];
 
-},{"./_FullInternals":"node_modules/konva/lib/_FullInternals.js"}],"src/index.js":[function(require,module,exports) {
+},{"./_FullInternals":"node_modules/konva/lib/_FullInternals.js"}],"src/findExtremes.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.findExtremes = findExtremes;
+//bathroom above the bench
+//let verticesArray = [0, 0, 839, 0, 848, 1860, 0, 1854];
+function findExtremes(arr) {
+  if (arr.length < 2 || arr.length % 2 !== 0) {
+    throw new Error("Invalid input array");
+  }
+  var leftmost = [arr[0], arr[1]];
+  var rightmost = [arr[0], arr[1]];
+  var highest = [arr[0], arr[1]];
+  var lowest = [arr[0], arr[1]];
+  for (var i = 0; i < arr.length; i += 2) {
+    var x = arr[i];
+    var y = arr[i + 1];
+    if (x < leftmost[0]) {
+      leftmost = [x, y];
+    }
+    if (x > rightmost[0]) {
+      rightmost = [x, y];
+    }
+    if (y < highest[1]) {
+      highest = [x, y];
+    }
+    if (y > lowest[1]) {
+      lowest = [x, y];
+    }
+  }
+  return {
+    leftmost: leftmost,
+    rightmost: rightmost,
+    highest: highest,
+    lowest: lowest
+  };
+}
+},{}],"src/index.js":[function(require,module,exports) {
 "use strict";
 
 var _konva = require("konva");
+var _findExtremes = require("./findExtremes");
 //polygon corners for the wall or floor (in pixels, but also millimeters)
-var verticesArray = [100, 100, 539, 200, 848, 860, 200, 1854];
+var verticesArray = [40, 80, 539, 200, 848, 860, 200, 1854];
 
-//bathroom above the bench
-//let verticesArray = [0, 0, 839, 0, 848, 1860, 0, 1854];
+//finds bounding box values for any polygon for use in starting pattern, returns an object with x-y pairs named leftmost, rightmost, highest, lowest ~'which means displays lowest on the screen which in JS means the greatest value of Y'
+//const extremes = findExtremes(verticesArray);
+//console.log(extremes);
 
 function trimRect(rect) {
   var pointsOfRect = rect.points;
@@ -11116,7 +11158,7 @@ function trimRect(rect) {
 }
 
 //random shape maker for testing
-//let verticesArray = [0, 0, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000, Math.random()*10000];
+//let verticesArray = [0, 0, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000, Math.random()*1000];
 var wall = drawPolygon(verticesArray);
 
 //zoom of stage
@@ -11125,11 +11167,12 @@ fillWallWithTiles(wall, 200, 65, 1.6);
 
 //do lines intersect? use this to find all intersections of polygon and tiles.
 //TODO make function to offset polygon line toward tile the distance of a groutline
-//TODO find intersections of offsetPolygoneBoundaryByGap and tile, then make a new pulygon that will represent a cut tile from those points
+//TODO find intersections of offsetPolygoneBoundaryByGap and tile, then make a new polygon that will represent a cut tile from those points
 //TODO function that is called as each tile is produced to see if any of its lines intersect with the polygon (bug? should I offset the polugon in to start with so that tiles that come near to but not touch the polygon are detected? Yes! will catch uncut tiles on the edge that would be a pain in the ass)
 //TODO function that checks to see if some part of the tile is inside the polygon
 //just walk over the points of the tile with this and if a corner fails we can cut it off. If all fail the tile shouldn't get pushed to parent
 
+//TODO round the floats to 1 decimal place, no way I'll have that many sig figs anyway
 //midpoint formula
 //const midpoint = ([x1, y1], [x2, y2]) => [(x1 + x2) / 2, (y1 + y2) / 2];
 //const mid = midpoint([150,50],[0,0]);
@@ -11142,7 +11185,6 @@ function getSlopeAngle(s1, s2) {
 //console.log(getSlopeAngle([0, 0], [2, 3]));
 // 56.309932474020215
 
-//TODO unfuck that while loop that controls the tile placement
 function intersect(x1, y1, x2, y2, x3, y3, x4, y4) {
   // Check if none of the lines are of length 0
   if (x1 === x2 && y1 === y2 || x3 === x4 && y3 === y4) {
@@ -11199,15 +11241,18 @@ function isPointInsidePolygon(vertices, x, y) {
 }
 function drawPolygon(vertices) {
   // Create a new Polygon shape
+  var extremesArray = (0, _findExtremes.findExtremes)(vertices);
   var polygon = new _konva.Line({
     points: vertices,
-    fill: "pink",
+    fill: "tan",
     stroke: "black",
     strokeWidth: 2,
-    closed: true
-    //draggable: true
+    closed: true,
+    extremes: extremesArray
+    //,draggable: true
   });
-  //console.log("This one:", polygon);
+
+  console.log("This one:", polygon.attrs.extremes.leftmost);
   return polygon;
 }
 function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
@@ -11218,7 +11263,7 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
     width: window.innerWidth,
     height: window.innerHeight,
     draggable: false,
-    pos: 1000
+    pos: 2000
   });
   stage.scale({
     x: scale,
@@ -11226,41 +11271,27 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
   });
   var layer = new _konva.Layer();
   stage.add(layer);
-  var testRect = new _konva.Rect({
-    x: 839.33,
-    y: 68.19999999999999,
-    width: 800,
-    height: 200,
-    fill: "blue",
-    stroke: "black",
-    strokeWidth: 1
-    //points: [testRect.x(),0,0,0,0,0,0,0]
-  });
-
-  //console.log(testRect.attrs.points[0]);
 
   // Add the polygon to the layer
   layer.add(polygon);
-  //layer.add(testRect);
+
   // Add the layer to the stage
   stage.add(layer);
-
-  //testRect.intersects(0,0,0,0);
-
   stage.batchDraw();
   // Initialize the x and y coordinates of the FIRST tile, top left right now
 
-  var x = 0;
-  var y = 0;
+  //console.log("Other:", polygon.attrs.extremes.leftmost);
+  var x = polygon.attrs.extremes.leftmost[0] - tileWidth - gap;
+  var y = polygon.attrs.extremes.highest[1] - tileHeight - gap;
   var rowCount = 0;
   var counterY = 0;
 
   // Keep placing tiles until the polygon is filled
-  while (y < 5000) {
+  while (y < polygon.attrs.extremes.lowest[1]) {
     // Check if the current position is inside the polygon
 
     counterY++;
-    if (x < 20000) {
+    if (x < polygon.attrs.extremes.rightmost[0] + tileWidth) {
       var tile = new _konva.Rect({
         x: x,
         y: y,
@@ -11275,11 +11306,10 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
       var text = new _konva.Text({
         x: x + tileWidth / 3,
         y: y + tileHeight / 3,
-        fontSize: 30,
-        fill: "black"
-        //text: `x:${x} y:${y}`
+        fontSize: 20,
+        fill: "black",
+        text: "x:".concat(parseFloat(x).toFixed(1), " \ny:").concat(parseFloat(y).toFixed(1))
       });
-
       for (var i = 0; i < 8; i += 2) {
         for (var j = 0; j < 8; j += 2) {
           var intersection = intersect(verticesArray[i], verticesArray[i + 1], verticesArray[i + 2], verticesArray[i + 3], tile.attrs.points[j], tile.attrs.points[j + 1], tile.attrs.points[j + 2], tile.attrs.points[j + 3]);
@@ -11295,10 +11325,12 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
             polygon.getParent().add(intersectionPoint);
           }
         }
+
+        //to make this smaller during testing make the number of things in the damn stage smaller
         var json = stage.toJSON();
         // To save the JSON string to local storage or send it to a server
         localStorage.setItem('konva_stage', json);
-        console.log("JSON\n" + json);
+        //console.log("JSON\n" + json);
       }
 
       //each one of these should push to an array if true in their proper place in the array to be made into a line. It doesn't matter as long as they're in order, how do you do that for notches?
@@ -11325,7 +11357,7 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
     }
   }
 }
-},{"konva":"node_modules/konva/lib/index.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"konva":"node_modules/konva/lib/index.js","./findExtremes":"src/findExtremes.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -11350,7 +11382,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52973" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64914" + '/');
   ws.onmessage = function (event) {
     checkedAssets = {};
     assetsToAccept = [];
