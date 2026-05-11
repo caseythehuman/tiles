@@ -32,7 +32,7 @@ export function exportDxf(wallVertices, tiles, cutSegments) {
   }
   // Close back to first point so the polygon is explicitly closed in the DXF
   wallPts.push([wallVertices[0], wallVertices[1]]);
-  d.drawPolyline(wallPts, true);
+  d.drawPolyline(wallPts, /* closed= */ true);
 
   // ── Tile rectangles ────────────────────────────────────────────────────────
   d.setActiveLayer("TILES");

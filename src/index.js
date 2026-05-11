@@ -230,13 +230,18 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
 
       // Build cut line(s) for this tile: connect each consecutive pair of
       // intersection points.  For a simple straight cut there will be exactly
-      // two points; for a corner cut there may be more.
-      for (let k = 0; k + 1 < tileIntersections.length; k += 2) {
+      // two points; for a corner cut there may be more.  We step by 1 so every
+      // adjacent pair is drawn, but we deduplicate near-identical points first
+      // to avoid zero-length segments from double-counted edge crossings.
+      const uniq = tileIntersections.filter((pt, idx, arr) =>
+        idx === 0 || Math.abs(pt.x - arr[idx - 1].x) > 0.01 || Math.abs(pt.y - arr[idx - 1].y) > 0.01
+      );
+      for (let k = 0; k + 1 < uniq.length; k++) {
         cutSegments.push({
-          x1: tileIntersections[k].x,
-          y1: tileIntersections[k].y,
-          x2: tileIntersections[k + 1].x,
-          y2: tileIntersections[k + 1].y
+          x1: uniq[k].x,
+          y1: uniq[k].y,
+          x2: uniq[k + 1].x,
+          y2: uniq[k + 1].y
         });
       }
 
