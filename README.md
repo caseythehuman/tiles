@@ -33,11 +33,11 @@ fillWallWithTiles(wall, 200, 65, 1.6);                        // (polygon, tileW
 
 ## TODO (remaining work to make it fully useful for construction)
 
-- [ ] **Dynamic canvas size** — set the stage width/height based on the polygon's bounding box instead of defaulting to the browser window size.
-- [ ] **Wire up `offsetPolygon.js`** — the file exists but is never imported. It needs to be connected so the polygon boundary is inset by the grout gap before intersection checks, ensuring tiles that nearly touch the edge are not missed.
+- [x] **Dynamic canvas size** — set the stage width/height based on the polygon's bounding box instead of defaulting to the browser window size.
+- [x] **Wire up `offsetPolygon.js`** — the file exists but is never imported. It needs to be connected so the polygon boundary is inset by the grout gap before intersection checks, ensuring tiles that nearly touch the edge are not missed.
 - [ ] **Cut-tile polygon generation** — once offset-polygon intersections are found, construct new closed polygons representing the actual shape of each cut tile so they can be rendered and measured precisely.
-- [ ] **Per-tile intersection check** — add a function called for every tile that detects whether any of the tile's edges cross the (offset) polygon boundary, and flags those tiles for cutting.
+- [x] **Per-tile intersection check** — fixed intersection loop to correctly wrap polygon/tile edge indices and to use the inset polygon for the intersection checks.
 - [ ] **Full corner-inside check** — walk all four corners of a tile: corners outside the polygon should be clipped off; tiles with zero corners inside should be dropped entirely.
-- [ ] **Fix hardcoded right-edge boundary** — the row-wrap condition uses `x >= 800` instead of `polygon.attrs.extremes.rightmost[0]`, which breaks for polygons of different widths.
-- [ ] **Round coordinates to 1 decimal place** — coordinates are currently full floating-point; rounding to 0.1 mm is more than sufficient for construction and keeps labels readable.
+- [x] **Fix hardcoded right-edge boundary** — the row-wrap condition uses `x >= 800` instead of `polygon.attrs.extremes.rightmost[0]`, which breaks for polygons of different widths.
+- [x] **Round coordinates to 1 decimal place** — coordinates are currently full floating-point; rounding to 0.1 mm is more than sufficient for construction and keeps labels readable.
 - [ ] **Export / print the blueprint** — add a way to export the finished canvas as a PDF or image so it can be printed at 1:1 scale and used as a physical template on site.

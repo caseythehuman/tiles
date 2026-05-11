@@ -1,4 +1,4 @@
-function offsetPolygon(points, distance, angle) {
+export function offsetPolygon(points, distance, angle) {
   // Create an empty array to store the offset points
   const offsetPoints = [];
 
