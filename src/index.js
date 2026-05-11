@@ -1,6 +1,7 @@
 import { Stage, Layer, Rect, Line, Text } from "konva";
 import { findExtremes } from "./findExtremes";
 import { offsetPolygon } from "./offsetPolygon";
+import { exportDxf, downloadDxf } from "./exportDxf";
 //polygon corners for the wall or floor (in pixels, but also millimeters)
 let verticesArray = [40, 80, 539, 200, 848, 860, 200, 1854];
 
@@ -20,7 +21,12 @@ const wall = drawPolygon(verticesArray);
 //zoom of stage
 let scale = 0.8;
 
-fillWallWithTiles(wall, 200, 65, 1.6);
+const { renderedTiles, cutSegments } = fillWallWithTiles(wall, 200, 65, 1.6);
+
+document.getElementById("export-dxf").addEventListener("click", function () {
+  const dxf = exportDxf(verticesArray, renderedTiles, cutSegments);
+  downloadDxf(dxf);
+});
 
 //do lines intersect? use this to find all intersections of polygon and tiles.
 //TODO find intersections of inset polygon boundary and tile, then construct new closed polygons
@@ -167,6 +173,10 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
 
   const polyLen = verticesArray.length;
 
+  // Collected data for DXF export
+  const renderedTiles = [];
+  const cutSegments = [];
+
   // Keep placing tiles until the polygon is filled
   while (y < ex.lowest[1]) {
     if (x < ex.rightmost[0] + tileWidth) {
@@ -189,9 +199,11 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
         text: `x:${round1(x).toFixed(1)} \ny:${round1(y).toFixed(1)}`
       });
 
-      // Check each edge of the (inset) polygon against each edge of the tile
+      // Check each edge of the (inset) polygon against each edge of the tile.
+      // Collect all intersection points for this tile so we can build cut lines.
       const tilePoints = tile.attrs.points;
       const tileLen = tilePoints.length;
+      const tileIntersections = [];
       for (let i = 0; i < polyLen; i += 2) {
         const ni = (i + 2) % polyLen;
         for (let j = 0; j < tileLen; j += 2) {
@@ -203,6 +215,7 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
             tilePoints[nj], tilePoints[nj + 1]
           );
           if (intersection !== false) {
+            tileIntersections.push(intersection);
             let intersectionPoint = new Rect({
               x: intersection.x,
               y: intersection.y,
@@ -215,6 +228,18 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
         }
       }
 
+      // Build cut line(s) for this tile: connect each consecutive pair of
+      // intersection points.  For a simple straight cut there will be exactly
+      // two points; for a corner cut there may be more.
+      for (let k = 0; k + 1 < tileIntersections.length; k += 2) {
+        cutSegments.push({
+          x1: tileIntersections[k].x,
+          y1: tileIntersections[k].y,
+          x2: tileIntersections[k + 1].x,
+          y2: tileIntersections[k + 1].y
+        });
+      }
+
       // Only render tiles that have at least one corner inside the polygon
       if (
         isPointInsidePolygon(verticesArray, tile.attrs.x, tile.attrs.y) ||
@@ -224,6 +249,7 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
       ) {
         polygon.getParent().add(tile);
         polygon.getParent().add(text);
+        renderedTiles.push({ x: tile.attrs.x, y: tile.attrs.y, width: tileWidth, height: tileHeight });
       }
     }
 
@@ -245,4 +271,6 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
 
   // Save the finished layout to localStorage
   localStorage.setItem('konva_stage', stage.toJSON());
+
+  return { renderedTiles, cutSegments };
 }
