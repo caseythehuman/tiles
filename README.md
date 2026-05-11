@@ -13,7 +13,7 @@ You define a wall or floor region as a polygon — a flat array of `[x, y]` coor
 3. **Filters tiles** using a point-in-polygon test — only tiles that have at least one corner inside the polygon are rendered, so tiles entirely outside the wall are skipped.
 4. **Detects edge intersections** between each tile's sides and the polygon's edges and marks the intersection points in red — these are the cut lines.
 5. **Labels each tile** with its real-world x/y coordinates (in mm) so you know exactly where each tile sits and how to cut it.
-6. **Saves the layout** as JSON to `localStorage` after each tile is processed.
+6. **Saves the layout** as JSON to `localStorage` after all tiles are placed.
 
 The result is a browser canvas (powered by [Konva.js](https://konvajs.org/)) you can read directly as a cutting guide during construction.
 

@@ -155,6 +155,8 @@ function fillWallWithTiles(polygon, tileWidth, tileHeight, gap) {
 
   // Inset the polygon boundary by the grout gap so that tiles that nearly
   // touch the wall edge are still detected and cut correctly.
+  // angle = -PI/2 rotates the edge direction 90° clockwise, giving the inward
+  // perpendicular normal for a clockwise polygon in screen coordinates.
   const insetPoints = offsetPolygon(flatToPoints(verticesArray), gap / 2, -Math.PI / 2);
   const insetVertices = pointsToFlat(insetPoints);
 
